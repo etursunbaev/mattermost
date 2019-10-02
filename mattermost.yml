@@ -1,0 +1,5 @@
+---
+- hosts: mattermost
+  remote_user: root
+  roles: 
+    - mattermost

@@ -1,0 +1,27 @@
+---
+- name: "SQL"
+  remote_user: root
+  import_tasks: sql.yml
+  tags: sql
+
+# - name: "Nginx"
+#   remote_user: root
+#   import_tasks: nginx.yml
+#   tags: nginx
+
+- name: "Apache2"
+  remote_user: root
+  import_tasks: apache.yml
+  tags: apache
+
+- name: "Mattermost"
+  remote_user: root
+  import_tasks: mattermost.yml
+  tags: mattermost
+
+- name: "Backup cron job"
+  remote_user: root
+  import_tasks: cron.yml
+  tags: cron
+  vars:
+    job_cmd: pg_dump mattermost | gzip - | ssh {{ backup_user }} "cat >mattermost/mm-`date "+\%y\%m\%d"`.sql.gz"

@@ -1,0 +1,8 @@
+---
+ansible_host: 10.0.0.15
+postgresql_pwd: somePwd
+server_name: mm.domain.com
+domain_names: mm.domain.com
+domain_alias: mattermost.domain.com
+home_dir: "{{ lookup('env','HOME') }}/.secret/"
+backup_user: backupuser@domain.com

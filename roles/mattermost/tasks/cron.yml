@@ -1,0 +1,9 @@
+---
+- name: Configure backup cron job
+  cron:
+    name: Backup PostgreSQL database
+    minute: 0
+    hour: 0
+    job: "{{ job_cmd }}"
+    user: postgres
+    state: present

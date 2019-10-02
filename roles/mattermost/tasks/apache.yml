@@ -1,0 +1,38 @@
+---
+- name: Verify Apache2 is installed
+  apt:
+    name: apache2
+    state: present
+
+- name: Upload config
+  template:
+    src: "apache.conf"
+    dest: /etc/apache2/sites-available/{{ domain_names }}.conf
+  register: config
+
+- name: Enable modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+    identifier: "{{ item }}_module"
+  with_items:
+    - rewrite
+    - proxy
+    - proxy_http
+    - proxy_wstunnel
+    - ssl
+  register: modules
+
+- name: Create symlink of {{ domain_names }}.conf
+  file:
+    src: /etc/apache2/sites-available/{{ domain_names }}.conf
+    dest: /etc/apache2/sites-enabled/{{ domain_names }}.conf
+    state: link 
+    force: yes
+  register: slink
+  
+- name: Restart Apache2
+  systemd:
+    name: apache2.service
+    state: restarted
+  when: modules.changed or config.changed or slink.changed

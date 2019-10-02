@@ -1,0 +1,37 @@
+---
+- name: Install PostgreSQL
+  apt:
+    name: 
+      - postgresql
+      - postgresql-contrib
+      - python-psycopg2
+
+- name: Create database
+  postgresql_db:
+    name: mattermost
+    state: present
+  become: true
+  become_user: postgres
+
+- name: Create database user
+  postgresql_user:
+    db: mattermost
+    name: mmuser
+    password: "{{ postgresql_pwd }}"
+    priv: ALL
+  become: true
+  become_user: postgres
+
+- name: Modify configuration
+  lineinfile:
+    path: /etc/postgresql/9.6/main/pg_hba.conf
+    regexp: 'local   all             all                                     peer'
+    line: "local   all             all                                     trust"
+    backrefs: yes
+  register: config
+
+- name: Reload PostgreSQL
+  systemd:
+    name: postgresql.service
+    state: reloaded
+  when: config.changed

@@ -1,0 +1,79 @@
+---
+- name: Add group "mattermost"
+  group:
+    name: mattermost
+    state: present
+
+- name: Create user mattermost
+  user:
+    name: mattermost
+    system: yes
+    createhome: yes
+    home: /home/mattermost
+    shell: /bin/bash
+    group: mattermost
+
+- name: Download Mattermost
+  get_url:
+    url: https://releases.mattermost.com/5.6.2/mattermost-5.6.2-linux-amd64.tar.gz
+    dest: /tmp/
+  register: download
+
+- name: Unarchive Mattermost
+  unarchive:
+    src: /tmp/mattermost-5.6.2-linux-amd64.tar.gz
+    dest: /home/mattermost/
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  when: download.changed
+
+- name: Create data storage folder
+  file:
+    path: /home/mattermost/data
+    state: directory
+    mode: 0755
+
+- name: Verify ownership
+  file:
+    path: /home/mattermost/
+    owner: mattermost
+    group: mattermost
+    recurse: yes
+
+- name: Modify DriverName configuration
+  lineinfile:
+    path: /home/mattermost/config/config.json
+    regexp: '"DriverName": "mysql",'
+    line: '        "DriverName": "postgres",'
+    backrefs: yes
+
+- name: Modify DataSource configuration
+  lineinfile:
+    path: /home/mattermost/config/config.json
+    regexp: '^        "DataSource"'
+    line: '        "DataSource": "postgres://mmuser:{{ postgresql_pwd }}@127.0.0.1:5432/mattermost?sslmode=disable&connect_timeout=10",'
+    backrefs: yes
+
+- name: Modify AllowCorsFrom configuration
+  lineinfile:
+    path: /home/mattermost/config/config.json
+    regexp: '        ""AllowCorsFrom": "",'
+    line: '        "AllowCorsFrom": "{{ domain_names }}",'
+    backrefs: yes
+
+- name: Upload systemd unit file
+  template:
+    src: mattermost.service
+    dest: /lib/systemd/system/
+  register: system
+
+- name: Reload Systemd
+  systemd:
+    daemon_reload: yes
+  when: system.changed
+
+- name: Start Mattermost
+  systemd:
+    name: mattermost.service
+    state: restarted
+    enabled: yes

@@ -1,0 +1,27 @@
+---
+- name: Install Nginx
+  apt:
+    name:
+      - nginx
+    state: present
+
+- name: Upload nginx conf
+  template:
+    src: mattermost.conf
+    dest: /etc/nginx/sites-available/mattermost.conf
+  register: conf
+
+- name: Symlink
+  file:
+    src: /etc/nginx/sites-available/mattermost.conf
+    dest: /etc/nginx/sites-enabled/mattermost.conf
+    state: link 
+    force: yes
+  register: symlink
+  when: conf.changed
+
+- name: Restart Nginx
+  systemd:
+    name: nginx.service
+    state: restarted
+  when: conf.changed
